@@ -14,7 +14,6 @@ A full-stack event platform for attendees, organizers, and admins. The project i
 - `src/`: frontend application
 - `server/src/`: backend API and business logic
 - `public/`: static assets
-- `PROJECT_DOCUMENT.md`: full English project document for interview or college presentation use
 
 ## Run Locally
 
@@ -30,6 +29,3 @@ cd server
 npm install
 npm run dev
 ```
-
-## Documentation
-The detailed English project report is available in [PROJECT_DOCUMENT.md](./PROJECT_DOCUMENT.md).
