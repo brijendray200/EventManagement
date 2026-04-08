@@ -1,0 +1,42 @@
+.admin-dashboard { padding-top: 150px; padding-bottom: 6rem; }
+.dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3.5rem; }
+.dh-content h1 { font-size: 3.2rem; margin-bottom: 0.5rem; }
+.dh-content p { color: var(--text-dim); }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 2rem; margin-bottom: 4rem; }
+.stat-card { padding: 2.50rem; border-radius: 1rem; display: flex; align-items: center; gap: 2rem; border-bottom: 3.5px solid rgba(255, 255, 255, 0.05); }
+.stat-icon { width: 60px; height: 60px; border-radius: 1rem; display: flex; align-items: center; justify-content: center; }
+.stat-info { display: flex; flex-direction: column; gap: 0.35rem; }
+.stat-label { font-size: 0.85rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05rem; }
+.stat-value { font-size: 2rem; font-weight: 800; color: white; line-height: 1; }
+.stat-trend { font-size: 0.85rem; font-weight: 700; display: flex; align-items: center; gap: 0.45rem; }
+.dash-sections { display: grid; grid-template-columns: 1fr 340px; gap: 4rem; }
+.dash-list-card { padding: 3rem; border-radius: 1rem; }
+.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; }
+.card-header h2 { font-size: 1.8rem; }
+.view-link { display: flex; align-items: center; gap: 0.5rem; color: var(--primary); font-size: 0.95rem; font-weight: 700; }
+.dash-table-container { width: 100%; overflow-x: auto; }
+.dash-table { width: 100%; border-collapse: collapse; text-align: left; }
+.dash-table th { padding: 1.5rem 1rem; color: var(--text-muted); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; border-bottom: 1.5px solid var(--glass-border); }
+.dash-table td { padding: 1.5rem 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.03); color: var(--text-dim); font-size: 0.95rem; }
+.table-item-info { display: flex; flex-direction: column; gap:0.25rem; }
+.table-item-info strong { color: white; font-size: 1.05rem; }
+.tag-pill { padding: 0.35rem 0.85rem; border-radius: 6px; font-size: 0.75rem; font-weight: 700; background: rgba(255, 255, 255, 0.05); color: var(--text-muted); }
+.table-actions-btns { display: flex; gap: 0.75rem; }
+.icon-btn-sm { padding: 0.65rem; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; transition: var(--transition); cursor: pointer; }
+.icon-btn-sm:hover { color: white; background: rgba(255, 255, 255, 0.05); transform: scale(1.1); }
+.icon-btn-sm.approve:hover { color: #10b981; border-color: #10b981; }
+.icon-btn-sm.reject:hover { color: #f43f5e; border-color: #f43f5e; }
+.admin-actions-card { padding: 3rem 2.5rem; border-radius: 1rem; height: fit-content; }
+.admin-actions-card h3 { font-size: 1.4rem; margin-bottom: 3rem; }
+.action-links { display: flex; flex-direction: column; gap: 1.25rem; }
+.qa-link { display: flex; align-items: center; gap: 1.5rem; padding: 1.25rem; background: rgba(255, 255, 255, 0.02); border-radius: 12px; color: var(--text-dim); font-weight: 700; font-size: 0.95rem; border: 1.25px solid transparent; transition: var(--transition); }
+.qa-link:hover { background: rgba(255, 255, 255, 0.05); color: white; border-color: var(--primary); transform: translateX(12px); }
+.bold-white { color: white; font-weight: 700; }
+.success-pill { color: #10b981; background: #10b98115; border: 1px solid #10b98133; }
+
+@media (max-width: 1200px) {
+  .dash-sections { grid-template-columns: 1fr; }
+}
+@media (max-width: 576px) {
+  .dash-list-card { padding: 2.5rem 1.5rem; }
+}

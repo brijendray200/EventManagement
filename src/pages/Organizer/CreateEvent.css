@@ -1,0 +1,71 @@
+.create-event-page { padding-top: 12rem; padding-bottom: 8rem; max-width: 1400px; margin: 0 auto; }
+.create-event-page .page-header { margin-bottom: 4rem; text-align: center; }
+.create-event-page h1 { font-size: 3.5rem; margin-bottom: 1rem; font-weight: 900; letter-spacing: -2px; }
+.create-event-page p { color: var(--text-dim); font-size: 1.15rem; max-width: 600px; margin: 0 auto; }
+
+.form-sections-grid { display: grid; grid-template-columns: 1fr 400px; gap: 3.5rem; align-items: start; }
+.form-main-pane { padding: 3.5rem; border-radius: 2rem; background: rgba(15, 23, 42, 0.4) !important; border: 1px solid rgba(255, 255, 255, 0.1) !important; backdrop-filter: blur(10px); }
+.form-group { margin-bottom: 2rem; }
+.form-group label { display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem; color: #ffffff !important; margin-bottom: 1rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.9; }
+
+.form-group input, .form-group textarea, .form-group select { 
+    background: rgba(255, 255, 255, 0.05) !important; 
+    border: 1px solid rgba(255, 255, 255, 0.12) !important; 
+    border-radius: 1rem !important; 
+    padding: 1.15rem !important;
+    font-size: 1rem !important;
+}
+
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--primary) !important; background: rgba(255,255,255,0.06) !important; box-shadow: 0 0 20px rgba(99, 102, 241, 0.2); }
+
+/* SUCCESS OVERLAY */
+.success-overlay {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 500px;
+    padding: 6rem 4rem;
+    text-align: center;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    background: rgba(15, 23, 42, 0.95) !important;
+    backdrop-filter: blur(40px) !important;
+    border-radius: 3rem;
+}
+
+.success-icon { color: #10b981; filter: drop-shadow(0 0 20px rgba(16, 185, 129, 0.4)); }
+.success-overlay h2 { font-size: 2.5rem; font-weight: 900; color: white; }
+.success-overlay p { font-size: 1.15rem; color: var(--text-dim); line-height: 1.6; }
+
+.side-panel-card { border-radius: 2rem !important; }
+.create-btn { border-radius: 1.25rem !important; font-size: 1.1rem !important; font-weight: 800 !important; }
+.form-group-row { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+.form-side-pane { display: flex; flex-direction: column; gap: 3rem; padding-bottom: 4rem; }
+.side-panel-card { padding: 3rem 2.5rem; border-radius: 1rem; display: flex; flex-direction: column; gap: 1.5rem; }
+.upload-card { height: 400px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.upload-placeholder { display: flex; flex-direction: column; align-items: center; gap: 1rem; color: var(--text-muted); }
+.upload-placeholder span { font-size: 1.15rem; font-weight: 700; color: white; margin-top: 1rem; }
+.price-hint { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; }
+.form-actions { display: flex; flex-direction: column; gap: 1.25rem; margin-top: 1.5rem; }
+.create-btn { width: 100%; justify-content: center; height: 3.5rem; }
+.save-btn { width: 100%; justify-content: center; height: 3.2rem; }
+.media-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; width: 100%; margin-top: 1rem; }
+.media-chip { position: relative; border-radius: 1rem; overflow: hidden; aspect-ratio: 1; background: rgba(255,255,255,0.06); }
+.media-chip img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.media-chip button { position: absolute; top: 0.4rem; right: 0.4rem; width: 1.75rem; height: 1.75rem; border-radius: 999px; border: none; background: rgba(15, 23, 42, 0.85); color: white; display: grid; place-items: center; cursor: pointer; }
+.highlight-points { display: flex; flex-direction: column; gap: 0.9rem; }
+.highlight-point-row { display: grid; grid-template-columns: 1fr auto; gap: 0.75rem; align-items: center; }
+.point-remove-btn { width: 2.5rem; height: 2.5rem; border-radius: 0.9rem; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: white; cursor: pointer; }
+.add-point-btn { margin-top: 0.9rem; align-self: flex-start; }
+
+@media (max-width: 991px) {
+  .form-sections-grid { grid-template-columns: 1fr; }
+  .form-side-pane { order: -1; }
+  .form-main-pane { padding: 2.5rem 1.5rem; }
+  .media-strip { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
