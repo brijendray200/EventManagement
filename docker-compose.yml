@@ -14,10 +14,7 @@ services:
     container_name: eventsphere-backend
     restart: unless-stopped
     env_file:
-      - path: ./server/.env
-        required: false
-      - path: ./server/.env.example
-        required: false
+      - ./server/.env
     environment:
       - NODE_ENV=production
       - MONGODB_URI=mongodb://mongo:27017/event_sphere

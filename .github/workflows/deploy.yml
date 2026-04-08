@@ -35,5 +35,7 @@ jobs:
     needs: build
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare backend env for compose validation
+        run: cp server/.env.example server/.env
       - name: Docker compose config check
         run: docker compose config
