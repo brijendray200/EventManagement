@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { NavLink, useLocation as useRouterLocation, useNavigate } from 'react-router-dom';
 import { 
   Calendar, 
@@ -19,7 +19,14 @@ import {
   RefreshCcw,
   Bell,
   ChevronRight,
-  CheckCheck
+  CheckCheck,
+  Briefcase,
+  Users,
+  Banknote,
+  Megaphone,
+  ShoppingBag,
+  MessageSquare,
+  Camera
 } from 'lucide-react';
 import { useLocation as useGeoLocation } from '../context/LocationContext';
 import { useNotifications } from '../context/NotificationContext';
@@ -30,7 +37,7 @@ const Navbar = ({ isAuthenticated, onLogout, userRole, userProfile }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const { city, fullLocation, changeLocation, refreshLocation, loading: locLoading } = useGeoLocation();
-  const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll, deleteNotification } = useNotifications();
+  const { notifications, getFilteredNotifications, unreadCount, getUnreadCount, markAsRead, markAllAsRead, clearAll, deleteNotification } = useNotifications();
   const navigate = useNavigate();
   const routerLocation = useRouterLocation();
   const calendarInputRef = useRef(null);
@@ -38,6 +45,33 @@ const Navbar = ({ isAuthenticated, onLogout, userRole, userProfile }) => {
   const notifMenuRef = useRef(null);
 
   const majorCities = ['Mumbai', 'Bangalore', 'Pune', 'Goa', 'Jaipur', 'Hyderabad', 'Delhi', 'Rishikesh', 'Kolkata', 'Chennai', 'Ahmedabad'];
+
+  // Role-based notification filtering
+  const isOrganizer = ['organizer', 'admin'].includes(userRole);
+  const roleNotifications = useMemo(() => {
+    return getFilteredNotifications(userRole);
+  }, [getFilteredNotifications, userRole, notifications]);
+  const roleUnreadCount = useMemo(() => {
+    return getUnreadCount(userRole);
+  }, [getUnreadCount, userRole, notifications]);
+
+  // Notification type icons
+  const getNotifIcon = (type, targetRole) => {
+    if (targetRole === 'organizer') {
+      switch (type) {
+        case 'attendee': return <Users size={16} />;
+        case 'revenue': case 'payment': return <Banknote size={16} />;
+        case 'event': return <Megaphone size={16} />;
+        default: return <Briefcase size={16} />;
+      }
+    }
+    switch (type) {
+      case 'booking': return <Ticket size={16} />;
+      case 'payment': return <Banknote size={16} />;
+      case 'event': return <Calendar size={16} />;
+      default: return <Bell size={16} />;
+    }
+  };
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -62,7 +96,17 @@ const Navbar = ({ isAuthenticated, onLogout, userRole, userProfile }) => {
     if (!isoString) return '';
     try {
       const date = new Date(isoString);
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMin = Math.floor(diffMs / 60000);
+      const diffHr = Math.floor(diffMs / 3600000);
+      const diffDay = Math.floor(diffMs / 86400000);
+
+      if (diffMin < 1) return 'Just now';
+      if (diffMin < 60) return `${diffMin}m ago`;
+      if (diffHr < 24) return `${diffHr}h ago`;
+      if (diffDay < 7) return `${diffDay}d ago`;
+      return date.toLocaleDateString([], { day: '2-digit', month: 'short' });
     } catch (e) {
       return '';
     }
@@ -93,6 +137,14 @@ const Navbar = ({ isAuthenticated, onLogout, userRole, userProfile }) => {
     nextParams.set('date', selectedDate);
 
     navigate(`/events?${nextParams.toString()}`);
+  };
+
+  const handleNotifClick = (notif) => {
+    markAsRead(notif.id);
+    if (notif.actionUrl) {
+      setShowNotifMenu(false);
+      navigate(notif.actionUrl);
+    }
   };
 
   return (
@@ -166,7 +218,10 @@ const Navbar = ({ isAuthenticated, onLogout, userRole, userProfile }) => {
         {/* CENTER: PRIMARY NAVIGATION */}
         <div className={`nav-links-center ${isOpen ? 'mobile-active' : ''}`}>
           <NavLink to="/" end className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'}>Home</NavLink>
-          <NavLink to="/events" className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'}>Events</NavLink>
+          
+          {userRole !== 'organizer' && (
+            <NavLink to="/events" className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'}>Events</NavLink>
+          )}
           {['organizer', 'admin'].includes(userRole) && (
             <NavLink to="/organizer/dashboard" className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'}>Organizer</NavLink>
           )}
@@ -188,14 +243,20 @@ const Navbar = ({ isAuthenticated, onLogout, userRole, userProfile }) => {
               onClick={() => setShowNotifMenu(!showNotifMenu)}
             >
               <Bell size={20} />
-              {unreadCount > 0 && <span className="notification-dot">{unreadCount}</span>}
+              {roleUnreadCount > 0 && <span className="notification-dot">{roleUnreadCount}</span>}
             </button>
 
             {showNotifMenu && (
               <div className="notif-dropdown-v2 glass-panel-v2">
                 <div className="notif-dropdown-header">
                   <div className="header-top">
-                    <h3>Notifications</h3>
+                    <h3>
+                      {isOrganizer ? (
+                        <><Briefcase size={16} style={{ marginRight: 6 }} />Organizer Alerts</>
+                      ) : (
+                        <>Notifications</>
+                      )}
+                    </h3>
                     <div className="header-actions">
                       <button onClick={markAllAsRead} title="Mark all as read">
                         <CheckCheck size={14} /> Read All
@@ -203,26 +264,29 @@ const Navbar = ({ isAuthenticated, onLogout, userRole, userProfile }) => {
                     </div>
                   </div>
                   <div className="header-stats">
-                    <span>{unreadCount} Unread</span>
+                    <span>{roleUnreadCount} Unread</span>
+                    {isOrganizer && <span className="role-badge-notif organizer-badge">ORGANIZER</span>}
+                    {!isOrganizer && <span className="role-badge-notif attendee-badge">ATTENDEE</span>}
                     <button className="clear-all-btn" onClick={clearAll}>Clear All</button>
                   </div>
                 </div>
 
                 <div className="notif-list">
-                  {notifications.length === 0 ? (
+                  {roleNotifications.length === 0 ? (
                     <div className="notif-empty">
                       <Mail size={32} />
-                      <p>No notifications yet</p>
+                      <p>{isOrganizer ? 'No organizer alerts yet' : 'No notifications yet'}</p>
                     </div>
                   ) : (
-                    notifications.map(notif => (
+                    roleNotifications.slice(0, 8).map(notif => (
                       <div 
                         key={notif.id} 
                         className={`notif-item-v2 ${notif.read ? 'read' : 'unread'}`}
-                        onClick={() => markAsRead(notif.id)}
+                        onClick={() => handleNotifClick(notif)}
+                        style={{ cursor: notif.actionUrl ? 'pointer' : 'default' }}
                       >
                         <div className="notif-item-icon">
-                          {notif.type === 'info' ? <Info size={16} /> : <Bell size={16} />}
+                          {getNotifIcon(notif.type, notif.targetRole)}
                         </div>
                         <div className="notif-item-content">
                           <p className="notif-item-title">{notif.title}</p>
@@ -241,7 +305,7 @@ const Navbar = ({ isAuthenticated, onLogout, userRole, userProfile }) => {
                   )}
                 </div>
 
-                {notifications.length > 0 && (
+                {roleNotifications.length > 0 && (
                   <div className="notif-dropdown-footer">
                     <button onClick={() => { setShowNotifMenu(false); navigate('/notifications'); }}>
                       View All Notifications <ChevronRight size={14} />
@@ -293,19 +357,33 @@ const Navbar = ({ isAuthenticated, onLogout, userRole, userProfile }) => {
                   <NavLink to="/profile" onClick={() => setShowProfileMenu(false)}>
                     <User size={16} /> Profile Settings
                   </NavLink>
-                  <NavLink to="/my-bookings" onClick={() => setShowProfileMenu(false)}>
-                    <Ticket size={16} /> My Bookings
-                  </NavLink>
-                  {['organizer', 'admin'].includes(userRole) && (
-                    <NavLink to="/organizer/dashboard" onClick={() => setShowProfileMenu(false)}>
-                      <LayoutDashboard size={16} /> Organizer Dashboard
+                  
+                  {userRole !== 'organizer' && userRole !== 'admin' && (
+                    <NavLink to="/my-bookings" onClick={() => setShowProfileMenu(false)}>
+                      <Ticket size={16} /> My Bookings
                     </NavLink>
                   )}
+
+                  {['organizer', 'admin'].includes(userRole) && (
+                    <>
+                      <NavLink to="/organizer/dashboard" onClick={() => setShowProfileMenu(false)}>
+                        <LayoutDashboard size={16} /> My Organizer Panel
+                      </NavLink>
+                      <NavLink to="/organizer/scanner" onClick={() => setShowProfileMenu(false)}>
+                        <Camera size={16} /> Ticket Scanner
+                      </NavLink>
+                      <NavLink to="/organizer/create-event" onClick={() => setShowProfileMenu(false)}>
+                        <CalendarDays size={16} /> Manage Events
+                      </NavLink>
+                    </>
+                  )}
+
                   {userRole === 'admin' && (
                     <NavLink to="/admin/dashboard" onClick={() => setShowProfileMenu(false)}>
-                      <LayoutDashboard size={16} /> Admin Dashboard
+                      <Settings size={16} /> Admin Dashboard
                     </NavLink>
                   )}
+
                   <button type="button" className="dropdown-action-link logout-inline" onClick={handleLogout}>
                     <LogOut size={16} /> Logout
                   </button>
@@ -340,6 +418,3 @@ const Navbar = ({ isAuthenticated, onLogout, userRole, userProfile }) => {
 };
 
 export default Navbar;
-
-
-

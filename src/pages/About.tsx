@@ -13,14 +13,25 @@ import {
   Ticket,
   Sparkles
 } from 'lucide-react';
+import api from '../utils/api';
 import './About.css';
 
 const About = () => {
+  const [platformStats, setPlatformStats] = React.useState(null);
+
+  React.useEffect(() => {
+    api.get('/events/stats/platform').then(res => {
+      if (res.data.success) {
+        setPlatformStats(res.data.data);
+      }
+    }).catch(console.error);
+  }, []);
+
   const stats = [
-    { label: 'Events Hosted', value: '15,000+', icon: <Award /> },
-    { label: 'Happy Users', value: '1M+', icon: <Users /> },
-    { label: 'Global Cities', value: '50+', icon: <Globe /> },
-    { label: 'Growth Rate', value: '250%', icon: <TrendingUp /> }
+    { label: 'Events Hosted', value: platformStats ? platformStats.totalEvents : 0, icon: <Award /> },
+    { label: 'Happy Users', value: platformStats ? platformStats.totalUsers : 0, icon: <Users /> },
+    { label: 'Global Cities', value: platformStats ? platformStats.uniqueCities : 0, icon: <Globe /> },
+    { label: 'Tickets Booked', value: platformStats ? platformStats.totalTickets : 0, icon: <Ticket /> }
   ];
 
   const values = [

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AIConcierge from './components/AIConcierge';
+import FeedbackWidget from './components/FeedbackWidget';
 import api from './utils/api';
 import Home from './pages/Home';
 import EventListing from './pages/EventListing';
@@ -23,6 +24,9 @@ import OrganizerDashboard from './pages/Organizer/Dashboard';
 import CreateEvent from './pages/Organizer/CreateEvent';
 import AttendeeList from './pages/Organizer/AttendeeList';
 import AdminDashboard from './pages/Admin/Dashboard';
+import FeedbackManagement from './pages/Admin/FeedbackManagement';
+import GiveFeedback from './pages/GiveFeedback';
+import TicketScanner from './pages/Organizer/TicketScanner';
 
 const getStoredAuthState = () => localStorage.getItem('isLoggedIn') === 'true' && !!localStorage.getItem('token');
 const getStoredUserRole = () => localStorage.getItem('userRole') || 'user';
@@ -169,7 +173,14 @@ function App() {
   return (
     <Router>
       <div className="app-wrapper">
-        {isAuthenticated && <Navbar isAuthenticated={isAuthenticated} onLogout={handleLogout} userRole={userRole} userProfile={userProfile} />}
+        {isAuthenticated && (
+          <Navbar 
+            isAuthenticated={isAuthenticated} 
+            onLogout={handleLogout} 
+            userRole={userRole} 
+            userProfile={userProfile} 
+          />
+        )}
         
         <div className={`content ${!isAuthenticated ? 'content-auth' : ''}`}>
           <Routes>
@@ -177,7 +188,7 @@ function App() {
             <Route path="/login" element={!isAuthenticated ? <Login onLogin={(data) => setAuth(true, data)} /> : <Navigate to="/" />} />
             <Route path="/signup" element={!isAuthenticated ? <Signup onSignup={(data) => setAuth(true, data)} /> : <Navigate to="/" />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password/:token" element={<ResetPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* PROTECTED ROUTES (Redirect to login if not authenticated) */}
             <Route path="/" element={
@@ -235,6 +246,11 @@ function App() {
                 <Contact />
               </PrivateRoute>
             } />
+            <Route path="/give-feedback" element={
+              <PrivateRoute isAuthenticated={isAuthenticated}>
+                <GiveFeedback userProfile={userProfile} userRole={userRole} />
+              </PrivateRoute>
+            } />
 
             {/* ORGANIZER PROTECTED ROUTES */}
             <Route path="/organizer/dashboard" element={
@@ -257,9 +273,19 @@ function App() {
                 <AttendeeList />
               </RoleRoute>
             } />
+            <Route path="/organizer/scanner" element={
+              <RoleRoute isAuthenticated={isAuthenticated} userRole={userRole} allowedRoles={['organizer', 'admin']}>
+                <TicketScanner />
+              </RoleRoute>
+            } />
             <Route path="/admin/dashboard" element={
               <RoleRoute isAuthenticated={isAuthenticated} userRole={userRole} allowedRoles={['admin']}>
                 <AdminDashboard />
+              </RoleRoute>
+            } />
+            <Route path="/admin/feedback" element={
+              <RoleRoute isAuthenticated={isAuthenticated} userRole={userRole} allowedRoles={['admin']}>
+                <FeedbackManagement />
               </RoleRoute>
             } />
             

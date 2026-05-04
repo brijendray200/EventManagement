@@ -22,6 +22,7 @@ import notificationRoutes from "./routes/notifications";
 import paymentRoutes from "./routes/payments";
 import supportRoutes from "./routes/support";
 import uploadRoutes from "./routes/uploads";
+import feedbackRoutes from "./routes/feedback";
 import { seedDatabase } from "./utils/seed";
 
 dotenv.config();
@@ -110,9 +111,10 @@ const start = async () => {
   app.use("/api/support", supportRoutes);
   app.use("/api/uploads", uploadRoutes);
   app.use("/api/payments", paymentRoutes);
+  app.use("/api/feedback", feedbackRoutes);
 
   if (process.env.NODE_ENV === "production") {
-    const frontendDist = path.resolve(__dirname, "../../../dist");
+    const frontendDist = path.resolve(__dirname, "../../dist");
     app.use(express.static(frontendDist));
     app.get("*", (req, res, next) => {
       if (req.path.startsWith("/api")) {

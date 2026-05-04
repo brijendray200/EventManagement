@@ -17,7 +17,7 @@ const isValidObjectId = (value: string | string[] | undefined) => mongoose.Types
 
 router.post("/", protect, validate(bookingSchema), async (req, res) => {
   try {
-    const { eventId, quantity, attendeeName, attendeeEmail } = req.body;
+    const { eventId, quantity, attendeeName, attendeeEmail, paymentMethod = "online" } = req.body;
     if (!isValidObjectId(String(eventId))) {
       return res.status(400).json({ success: false, message: "Invalid event id" });
     }
@@ -38,7 +38,22 @@ router.post("/", protect, validate(bookingSchema), async (req, res) => {
       attendeeEmail,
       quantity: Number(quantity),
       totalPrice: event.price * Number(quantity),
+      paymentMethod,
+      status: paymentMethod === "cod" ? "confirmed" : "pending",
     });
+
+    if (paymentMethod === "cod") {
+      event.ticketsAvailable -= Number(quantity);
+      event.ticketsSold += Number(quantity);
+      await event.save();
+
+      await Notification.create({
+        user: req.user!._id,
+        title: "Booking confirmed (COD)",
+        message: `Your booking for ${event.title} has been confirmed via Cash on Delivery.`,
+        type: "booking",
+      });
+    }
 
     res.status(201).json({ success: true, data: booking });
   } catch (error) {
@@ -100,6 +115,9 @@ router.get("/:id/qrcode", protect, async (req, res) => {
       JSON.stringify({
         bookingId: booking._id,
         attendeeName: booking.attendeeName,
+        attendeeEmail: booking.attendeeEmail,
+        totalPrice: booking.totalPrice,
+        status: booking.status,
       })
     );
 
@@ -222,6 +240,112 @@ router.delete("/:id", protect, async (req, res) => {
     booking.paymentStatus = booking.paymentStatus === "paid" ? "paid" : "failed";
     await booking.save();
     res.json({ success: true, data: booking });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post("/:id/cod", protect, async (req, res) => {
+  try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ success: false, message: "Invalid booking id" });
+    }
+
+    const booking = await Booking.findById(req.params.id).populate("event");
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
+
+    if (String(booking.user) !== String(req.user!._id) && req.user!.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Not authorized" });
+    }
+
+    if (booking.status !== "pending") {
+      return res.status(400).json({ success: false, message: "Booking is already confirmed or cancelled" });
+    }
+
+    const event = await Event.findById(booking.event._id);
+    if (!event) {
+      return res.status(404).json({ success: false, message: "Event not found" });
+    }
+
+    if (event.ticketsAvailable < booking.quantity) {
+      return res.status(400).json({ success: false, message: "Not enough tickets available" });
+    }
+
+    booking.paymentMethod = "cod";
+    booking.status = "confirmed";
+    await booking.save();
+
+    event.ticketsAvailable -= booking.quantity;
+    event.ticketsSold += booking.quantity;
+    await event.save();
+
+    await Notification.create({
+      user: booking.user,
+      title: "Booking confirmed (COD)",
+      message: `Your booking for ${(event as any).title} has been confirmed via Cash on Delivery.`,
+      type: "booking",
+    });
+
+    res.json({ success: true, data: booking });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post("/verify-ticket", protect, async (req, res) => {
+  try {
+    const { bookingId } = req.body;
+    if (!isValidObjectId(bookingId)) {
+      return res.status(400).json({ success: false, message: "Invalid booking id" });
+    }
+
+    const booking = await Booking.findById(bookingId).populate("event");
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
+
+    // Authorization check: Only admin or the event organizer can verify
+    const event = booking.event as any;
+    if (req.user!.role !== "admin" && String(event.organizer) !== String(req.user!._id)) {
+      return res.status(403).json({ success: false, message: "Not authorized to verify tickets for this event" });
+    }
+
+    if (booking.status !== "confirmed") {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Admission Denied: This ticket status is ${booking.status.toUpperCase()}.`,
+      });
+    }
+
+    if (booking.isCheckedIn) {
+      return res.status(400).json({
+        success: false,
+        message: "Admission Denied: This ticket has ALREADY BEEN SCANNED.",
+        data: {
+          attendeeName: booking.attendeeName,
+          scannedAt: booking.checkedInAt,
+        }
+      });
+    }
+
+    // Mark as checked in
+    booking.isCheckedIn = true;
+    booking.checkedInAt = new Date();
+    await booking.save();
+
+    res.json({
+      success: true,
+      message: "Access Granted: Welcome to the event!",
+      data: {
+        bookingId: booking._id,
+        attendeeName: booking.attendeeName,
+        eventName: event.title,
+        quantity: booking.quantity,
+        checkedInAt: booking.checkedInAt,
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

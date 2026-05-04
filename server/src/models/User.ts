@@ -20,6 +20,10 @@ export interface IUser {
     eventFocus?: string;
     teamSize?: string;
   };
+  rating?: number;
+  reviewsCount?: number;
+  followerCount?: string;
+  eventCount?: number;
   refreshToken?: string;
   refreshTokenExpire?: Date;
   resetPasswordToken?: string;
@@ -55,6 +59,10 @@ const userSchema = new Schema<IUser>(
       eventFocus: { type: String, default: "" },
       teamSize: { type: String, default: "" },
     },
+    rating: { type: Number, default: 4.5 },
+    reviewsCount: { type: Number, default: 0 },
+    followerCount: { type: String, default: "0" },
+    eventCount: { type: Number, default: 0 },
     refreshToken: String,
     refreshTokenExpire: Date,
     resetPasswordToken: String,
@@ -107,7 +115,7 @@ userSchema.methods.matchPassword = async function matchPassword(enteredPassword:
 };
 
 userSchema.methods.getResetPasswordToken = function getResetPasswordToken() {
-  const resetToken = crypto.randomBytes(20).toString("hex");
+  const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
   this.resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
   this.resetPasswordExpire = new Date(Date.now() + 10 * 60 * 1000);
   return resetToken;

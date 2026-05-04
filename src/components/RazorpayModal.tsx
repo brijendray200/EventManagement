@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../utils/api';
-import { X, ShieldCheck, CreditCard, Laptop, Smartphone, CheckCircle } from 'lucide-react';
+import { X, ShieldCheck, CreditCard, Laptop, Smartphone, CheckCircle, IndianRupee } from 'lucide-react';
 import { useCurrency } from '../context/CurrencyContext';
 import { useNotifications } from '../context/NotificationContext';
 
@@ -23,6 +23,24 @@ const RazorpayModal = ({ isOpen, onClose, amount, onSuccess, eventTitle, targetI
         }
 
         setStep('processing');
+
+        // MOCK PAYMENT BYPASS
+        if (targetId === 'mock-payment-id' || targetId.startsWith('mock')) {
+            setTimeout(() => {
+                setStep('success');
+                showNotification(`Demo Payment Successful!`, 'success');
+                pushNotification(
+                    'Demo Payment successful',
+                    `Your demo payment for ${eventTitle || 'this event'} was completed successfully.`,
+                    'payment'
+                );
+                setTimeout(() => {
+                    onSuccess();
+                }, 1500);
+            }, 2000);
+            return;
+        }
+
         try {
             // 1. Create order on backend based on type
             const endpoint = type === 'booking' ? `/bookings/${targetId}/pay` : `/ads/${targetId}/pay`;
@@ -64,6 +82,49 @@ const RazorpayModal = ({ isOpen, onClose, amount, onSuccess, eventTitle, targetI
         }
     };
 
+    const handleCODPayment = async () => {
+        if (!targetId) return;
+        
+        setStep('processing');
+
+        // MOCK PAYMENT BYPASS
+        if (targetId === 'mock-payment-id' || targetId.startsWith('mock')) {
+            setTimeout(() => {
+                setStep('success');
+                showNotification(`Demo COD Confirmation Successful!`, 'success');
+                pushNotification(
+                    'Demo COD confirmed',
+                    `Your demo booking for ${eventTitle || 'this event'} was confirmed via COD.`,
+                    'payment'
+                );
+                setTimeout(() => {
+                    onSuccess();
+                }, 1500);
+            }, 1000);
+            return;
+        }
+
+        try {
+            const { data } = await api.post(`/bookings/${targetId}/cod`);
+            if (data.success) {
+                setStep('success');
+                showNotification(`Booking Confirmed via COD!`, 'success');
+                pushNotification(
+                    'Booking Confirmed (COD)',
+                    `Your booking for ${eventTitle || 'the event'} has been confirmed. Please pay at the venue.`,
+                    'payment'
+                );
+                setTimeout(() => {
+                    onSuccess();
+                }, 1500);
+            }
+        } catch (error) {
+            console.error('COD Error:', error);
+            alert(error.response?.data?.message || 'COD confirmation failed');
+            setStep('payment_methods');
+        }
+    };
+
     return (
         <div className="razorpay-overlay">
             <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="razorpay-modal">
@@ -93,6 +154,13 @@ const RazorpayModal = ({ isOpen, onClose, amount, onSuccess, eventTitle, targetI
                                 <div className="rzp-method-icon netbanking"><Laptop size={20} /></div>
                                 <div className="rzp-method-info"><strong>Netbanking</strong><span>All Indian Banks</span></div>
                             </button>
+
+                            {type === 'booking' && (
+                                <button className="rzp-method-item" onClick={handleCODPayment}>
+                                    <div className="rzp-method-icon cod" style={{background: '#fff0f0', color: '#e74c3c'}}><IndianRupee size={20} /></div>
+                                    <div className="rzp-method-info"><strong>Cash on Delivery (COD)</strong><span>Pay at the venue</span></div>
+                                </button>
+                            )}
                         </div>
                     )}
                     {step === 'processing' && (
@@ -105,7 +173,12 @@ const RazorpayModal = ({ isOpen, onClose, amount, onSuccess, eventTitle, targetI
                         </div>
                     )}
                 </div>
-                <div className="razorpay-footer"><div className="rzp-secure"><ShieldCheck size={14} /> <span>Razorpay Secured</span></div></div>
+                <div className="razorpay-footer">
+                  <div className="rzp-secure" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#1aab1a', fontSize: '0.75rem', fontWeight: 600 }}>
+                    <ShieldCheck size={16} /> 
+                    <span>END-TO-END ENCRYPTED PAYMENTS</span>
+                  </div>
+                </div>
             </motion.div>
             <style>{`
                 .razorpay-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); z-index: 10000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }

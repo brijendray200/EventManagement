@@ -10,11 +10,14 @@ import {
   BarChart3,
   ChevronRight,
   Banknote,
-  Sparkles
+  Sparkles,
+  Search,
+  Camera
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useCurrency } from '../../context/CurrencyContext';
 import api from '../../utils/api';
+import PageLoader from '../../components/PageLoader';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -42,6 +45,8 @@ const Dashboard = () => {
 
     fetchDashboard();
   }, []);
+
+  if (loading) return <PageLoader title="Syncing Organizer Stats..." />;
 
   const stats = [
     { label: 'Total Revenue', value: formatPrice(dashboard.stats.revenue), icon: <Banknote size={22}/>, color: '#ec4899', trend: `+${dashboard.stats.activeEvents}`, up: true },
@@ -165,6 +170,10 @@ const Dashboard = () => {
           <div className="section-card glass-panel side-card">
             <h3>Quick <span className="gradient-text">Actions</span></h3>
             <nav className="side-dash-nav">
+              <NavLink to="/organizer/scanner" className="s-nav-item">
+                <div className="s-nav-icon"><Search size={18}/></div>
+                <span>Ticket Scanner</span>
+              </NavLink>
               <NavLink to="/organizer/attendees" className="s-nav-item">
                 <div className="s-nav-icon"><Users size={18}/></div>
                 <span>Attendee List</span>

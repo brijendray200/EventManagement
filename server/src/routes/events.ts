@@ -94,7 +94,7 @@ router.get("/organizer/dashboard", protect, authorize("organizer", "admin"), asy
 
 router.get("/:id", async (req, res) => {
   try {
-    const event = await Event.findById(req.params.id).populate("organizer", "name email");
+    const event = await Event.findById(req.params.id).populate("organizer", "name email avatar bio organizerProfile");
     if (!event) {
       return res.status(404).json({ success: false, message: "Event not found" });
     }
@@ -117,7 +117,7 @@ router.post("/", protect, authorize("organizer", "admin"), validate(eventSchema)
           ? req.body.highlightPoints
           : categoryHighlights[req.body.category] || categoryHighlights.Concerts,
       organizer: req.user!._id,
-      organizerName: req.user!.name,
+      organizerName: req.user!.organizerProfile?.brandName || req.user!.name,
       status: "approved",
     });
 

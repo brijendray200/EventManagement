@@ -28,6 +28,8 @@ export const forgotPasswordSchema = z.object({
 });
 
 export const resetPasswordSchema = z.object({
+  email: z.email().trim().toLowerCase(),
+  otp: z.string().length(6),
   password: z.string().min(6).max(128),
 });
 
@@ -75,6 +77,7 @@ export const bookingSchema = z.object({
   attendeeName: z.string().trim().min(2).max(80),
   attendeeEmail: z.email().trim().toLowerCase(),
   quantity: z.number().int().min(1).max(20),
+  paymentMethod: z.enum(["online", "cod"]).optional(),
 });
 
 export const contactSchema = z.object({

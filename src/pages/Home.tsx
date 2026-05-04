@@ -12,12 +12,18 @@ import {
   Heart,
   Briefcase,
   Monitor,
-  Ticket
+  Ticket,
+  PlusCircle,
+  LayoutDashboard,
+  Users,
+  Megaphone
 } from 'lucide-react';
 import EventCard from '../components/EventCard';
+import OrganizerCard from '../components/OrganizerCard';
 import { useLocation } from '../context/LocationContext';
 import { motion } from 'framer-motion';
 import api from '../utils/api';
+import { MOCK_EVENTS } from '../utils/mockData';
 import './Home.css';
 
 const Home = () => {
@@ -28,17 +34,23 @@ const Home = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [realEvents, setRealEvents] = useState([]);
   const [activeAds, setActiveAds] = useState([]);
+  const [platformStats, setPlatformStats] = useState(null);
+  const [realOrganizers, setRealOrganizers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchHomeData = async () => {
       try {
-        const [eventRes, adRes] = await Promise.all([
+        const [eventRes, adRes, statsRes, orgRes] = await Promise.all([
           api.get('/events'),
-          api.get('/ads/active')
+          api.get('/ads/active'),
+          api.get('/events/stats/platform'),
+          api.get('/auth/organizers')
         ]);
         if (eventRes.data.success) setRealEvents(eventRes.data.data);
         if (adRes.data.success) setActiveAds(adRes.data.data);
+        if (statsRes.data.success) setPlatformStats(statsRes.data.data);
+        if (orgRes.data.success) setRealOrganizers(orgRes.data.data);
       } catch (error) {
         console.error('Error fetching home data:', error);
       } finally {
@@ -48,23 +60,16 @@ const Home = () => {
     fetchHomeData();
   }, []);
 
-  const displayEvents = realEvents;
+  const mockEvents = MOCK_EVENTS;
 
-  const nearbyEvents = displayEvents.filter(event => 
-    event.location.toLowerCase().includes(city.toLowerCase())
-  );
+  const displayEvents = realEvents.length > 0 ? realEvents : mockEvents;
+  const displayNearby = displayEvents.slice(0, 6);
 
-  const displayNearby = nearbyEvents.length > 0 ? nearbyEvents.slice(0, 3) : displayEvents.slice(0, 3);
-
-  const trendingEvents = displayEvents.filter(event => 
-    !event.location.toLowerCase().includes(city.toLowerCase())
-  ).slice(0, 3);
-  
   const categories = [
-    { name: 'Concerts', icon: <Music />, color: '#ec4899', count: 12 },
-    { name: 'Workshops', icon: <Monitor />, color: '#6366f1', count: 8 },
-    { name: 'Corporate', icon: <Briefcase />, color: '#3b82f6', count: 15 },
-    { name: 'Weddings', icon: <Heart />, color: '#f59e0b', count: 5 },
+    { name: 'Concerts', icon: <Music />, color: '#ec4899', count: platformStats?.categories?.['Concerts'] || 0 },
+    { name: 'Workshops', icon: <Monitor />, color: '#6366f1', count: platformStats?.categories?.['Workshops'] || 0 },
+    { name: 'Corporate', icon: <Briefcase />, color: '#3b82f6', count: platformStats?.categories?.['Corporate'] || 0 },
+    { name: 'Weddings', icon: <Heart />, color: '#f59e0b', count: platformStats?.categories?.['Weddings'] || 0 },
   ];
 
   const steps = [
@@ -90,6 +95,78 @@ const Home = () => {
     { name: 'Marcus Chen', role: 'Organizer', text: 'Managing event listings and attendee details has become much simpler for our team.' },
     { name: 'Elena Rodriguez', role: 'Concert Goer', text: 'I was able to check event details, book tickets, and get updates without any hassle.' },
   ];
+
+  const topOrganizers = [
+    {
+      name: 'EventSphere Productions',
+      specialty: 'Elite Events & Tech',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+      banner: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=1200',
+      eventCount: 45,
+      followerCount: '25K',
+      rating: 5.0,
+      reviews: 1240,
+      verified: true,
+      email: 'brijendrayadav@gmail.com'
+    },
+    {
+      name: 'Visionary Workshops',
+      specialty: 'Education & Tech',
+      avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
+      banner: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=1200',
+      eventCount: 28,
+      followerCount: '8.5K',
+      rating: 4.8,
+      reviews: 420,
+      verified: true
+    },
+    {
+      name: 'Grand Moments',
+      specialty: 'Weddings & Private',
+      avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=200',
+      banner: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=1200',
+      eventCount: 15,
+      followerCount: '5K',
+      rating: 4.9,
+      reviews: 210,
+      verified: true
+    },
+    {
+      name: 'Corporate Connect',
+      specialty: 'Seminars & Networking',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200',
+      banner: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&q=80&w=1200',
+      eventCount: 34,
+      followerCount: '9K',
+      rating: 4.7,
+      reviews: 560,
+      verified: true
+    },
+    {
+      name: 'Lumina Gala Events',
+      specialty: 'Corporate & Luxury',
+      avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=200',
+      banner: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=1200',
+      eventCount: 22,
+      followerCount: '6.2K',
+      rating: 4.8,
+      reviews: 310,
+      verified: true
+    },
+    {
+      name: 'Pulse Nightlife',
+      specialty: 'EDM & Concerts',
+      avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=200',
+      banner: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=1200',
+      eventCount: 55,
+      followerCount: '15K',
+      rating: 4.9,
+      reviews: 1200,
+      verified: true
+    }
+  ];
+
+  const displayOrganizers = realOrganizers.length > 0 ? realOrganizers.slice(0, 6) : topOrganizers.slice(0, 6);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -156,15 +233,15 @@ const Home = () => {
             
             <div className="hero-stats" style={{ display: 'flex', gap: '3rem', marginTop: '5rem' }}>
               <div className="stat">
-                <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>12k+</h3>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>{platformStats ? platformStats.totalTickets : 0}</h3>
                 <p style={{ color: 'var(--text-muted)' }}>Tickets Booked</p>
               </div>
               <div className="stat">
-                <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>500k+</h3>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>{platformStats ? platformStats.totalUsers : 0}</h3>
                 <p style={{ color: 'var(--text-muted)' }}>Happy Users</p>
               </div>
               <div className="stat">
-                <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>50+</h3>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>{platformStats ? platformStats.uniqueCities : 0}</h3>
                 <p style={{ color: 'var(--text-muted)' }}>Cities Covered</p>
               </div>
             </div>
@@ -190,65 +267,81 @@ const Home = () => {
       </section>
 
       {/* NEARBY EXPERIENCES */}
-      <section className="featured-section container nearby-section">
-        <div className="section-header">
-          <div className="section-title-group">
-            <h2 className="section-title">
-              {nearbyEvents.length > 0 ? (
-                <>Events Near <span className="gradient-text">{city}</span></>
-              ) : (
-                <>Global <span className="gradient-text">Trending</span></>
-              )}
-            </h2>
-            <p style={{ color: 'var(--text-dim)', fontSize: '1.1rem' }}>
-              {nearbyEvents.length > 0 
-                ? `Personalized experiences within your immediate vicinity in ${city}.` 
-                : 'Popular events people are checking out right now.'}
-            </p>
+      {/* GLOBAL TRENDING - Hide for Organizers */}
+      {userRole !== 'organizer' && (
+        <section className="featured-section container nearby-section">
+          <div className="section-header">
+            <div className="section-title-group">
+              <h2 className="section-title">
+                Global <span className="gradient-text">Trending</span>
+              </h2>
+              <p style={{ color: 'var(--text-dim)', fontSize: '1.1rem' }}>
+                Popular events people are checking out right now across the globe.
+              </p>
+            </div>
+            <NavLink to="/events" className="btn btn-secondary">
+              See All <ArrowRight size={16} />
+            </NavLink>
           </div>
-          <NavLink to="/events" className="btn btn-secondary">
-            See More <ArrowRight size={16} />
-          </NavLink>
-        </div>
 
-        <div className="event-grid">
-          {displayNearby.map((event, i) => (
-            <motion.div 
-              initial={{ opacity: 0, y: 30 }} 
-              whileInView={{ opacity: 1, y: 0 }} 
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              key={event._id || event.id}
-            >
-              <EventCard event={event} />
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* TRENDING EXPERIENCES */}
-      <section className="featured-section container">
-        <div className="section-header">
-          <div className="section-title-group">
-            <h2 className="section-title">Trending <span className="gradient-text">Events</span></h2>
-            <p style={{ color: 'var(--text-dim)', fontSize: '1.1rem' }}>Popular events that users are booking right now.</p>
+          <div className="event-grid">
+            {displayNearby.map((event, i) => (
+              <motion.div 
+                initial={{ opacity: 0, y: 30 }} 
+                whileInView={{ opacity: 1, y: 0 }} 
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                key={event._id || event.id}
+              >
+                <EventCard event={event} />
+              </motion.div>
+            ))}
           </div>
-          <NavLink to="/events" className="btn btn-secondary">Explore All <ArrowRight size={16} /></NavLink>
-        </div>
-        <div className="event-grid">
-          {trendingEvents.map((event, i) => (
-            <motion.div 
-              initial={{ opacity: 0, y: 30 }} 
-              whileInView={{ opacity: 1, y: 0 }} 
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              key={event._id || event.id}
-            >
-              <EventCard event={event} />
-            </motion.div>
-          ))}
-        </div>
-      </section>
+        </section>
+      )}
+
+      {/* ORGANIZER HUB - Show only for Organizers */}
+      {userRole === 'organizer' && (
+        <section className="featured-section container">
+          <div className="section-header">
+            <div className="section-title-group">
+              <h2 className="section-title">Organizer <span className="gradient-text">Hub</span></h2>
+              <p style={{ color: 'var(--text-dim)', fontSize: '1.1rem' }}>Manage your events and reach a wider audience with ease.</p>
+            </div>
+          </div>
+          <div className="quick-actions-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem', marginTop: '3rem' }}>
+             <motion.div whileHover={{ y: -10 }}>
+               <NavLink to="/organizer/create-event" className="action-card glass-panel" style={{ padding: '3rem 2rem', borderRadius: '2rem', textAlign: 'center', display: 'block', textDecoration: 'none', color: 'inherit' }}>
+                  <PlusCircle size={48} style={{ color: 'var(--primary)', marginBottom: '1.5rem' }} />
+                  <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Create Event</h3>
+                  <p style={{ opacity: 0.6, fontSize: '1rem' }}>Launch your next amazing experience</p>
+               </NavLink>
+             </motion.div>
+             <motion.div whileHover={{ y: -10 }}>
+               <NavLink to="/organizer/dashboard" className="action-card glass-panel" style={{ padding: '3rem 2rem', borderRadius: '2rem', textAlign: 'center', display: 'block', textDecoration: 'none', color: 'inherit' }}>
+                  <LayoutDashboard size={48} style={{ color: 'var(--secondary)', marginBottom: '1.5rem' }} />
+                  <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Dashboard</h3>
+                  <p style={{ opacity: 0.6, fontSize: '1rem' }}>Monitor and manage all your events</p>
+               </NavLink>
+             </motion.div>
+             <motion.div whileHover={{ y: -10 }}>
+               <NavLink to="/organizer/attendees" className="action-card glass-panel" style={{ padding: '3rem 2rem', borderRadius: '2rem', textAlign: 'center', display: 'block', textDecoration: 'none', color: 'inherit' }}>
+                  <Users size={48} style={{ color: '#10b981', marginBottom: '1.5rem' }} />
+                  <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Manage Guests</h3>
+                  <p style={{ opacity: 0.6, fontSize: '1rem' }}>Track bookings and attendee lists</p>
+               </NavLink>
+             </motion.div>
+             <motion.div whileHover={{ y: -10 }}>
+               <NavLink to="/place-ad" className="action-card glass-panel" style={{ padding: '3rem 2rem', borderRadius: '2rem', textAlign: 'center', display: 'block', textDecoration: 'none', color: 'inherit' }}>
+                  <Megaphone size={48} style={{ color: '#f59e0b', marginBottom: '1.5rem' }} />
+                  <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Promote</h3>
+                  <p style={{ opacity: 0.6, fontSize: '1rem' }}>Sponsor events for more visibility</p>
+               </NavLink>
+             </motion.div>
+          </div>
+        </section>
+      )}
+
 
       {/* HOW IT WORKS */}
       <section className="container">
@@ -297,6 +390,30 @@ const Home = () => {
               <div className="cat-icon" style={{ color: cat.color }}>{cat.icon}</div>
               <h3 className="cat-name">{cat.name}</h3>
               <p className="cat-count" style={{ fontSize: '0.9rem', opacity: 0.6 }}>{cat.count}+ Events</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* TOP ORGANIZERS */}
+      <section className="container section featured-section" style={{ marginTop: '5rem' }}>
+        <div className="section-header">
+           <div className="section-title-group">
+            <h2 className="section-title">Top <span className="gradient-text">Organizers</span></h2>
+            <p style={{ color: 'var(--text-dim)' }}>The best event planners and creators on our platform.</p>
+          </div>
+          <button className="btn btn-secondary">All Organizers <ArrowRight size={16} /></button>
+        </div>
+        <div className="organizers-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '2rem' }}>
+          {displayOrganizers.map((org, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+            >
+              <OrganizerCard organizer={org} />
             </motion.div>
           ))}
         </div>

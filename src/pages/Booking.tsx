@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import api from '../utils/api';
 import PageLoader from '../components/PageLoader';
 import { useNotifications } from '../context/NotificationContext';
+import { MOCK_EVENTS } from '../utils/mockData';
 import './Booking.css';
 
 const Booking = () => {
@@ -17,6 +18,15 @@ const Booking = () => {
 
   useEffect(() => {
     const fetchEvent = async () => {
+      if (eventId && eventId.startsWith('mock')) {
+        const mockEvent = MOCK_EVENTS.find(e => e._id === eventId || e.id.toString() === eventId.replace('mock', ''));
+        if (mockEvent) {
+          setEvent(mockEvent);
+          setLoading(false);
+          return;
+        }
+      }
+
       try {
         const { data } = await api.get(`/events/${eventId}`);
         if (data.success) {
@@ -33,6 +43,17 @@ const Booking = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (eventId && eventId.startsWith('mock')) {
+      pushNotification(
+        'Mock Booking created',
+        `Your booking for ${event?.title || 'this event'} (Demo) was created. Complete payment to confirm your ticket.`,
+        'booking'
+      );
+      navigate('/payment/mock-payment-id');
+      return;
+    }
+
     try {
       const { data } = await api.post('/bookings', {
         eventId: eventId,

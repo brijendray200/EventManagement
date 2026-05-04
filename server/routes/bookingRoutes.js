@@ -4,7 +4,8 @@ const {
     getMyBookings,
     getEventBookings,
     getBookingQR,
-    cancelBooking
+    cancelBooking,
+    confirmCODBooking
 } = require('../controllers/bookingController');
 const { createRazorpayOrder, verifyPayment } = require('../controllers/paymentController');
 
@@ -16,6 +17,7 @@ router.post('/', protect, createBooking);
 router.get('/my-bookings', protect, getMyBookings);
 router.get('/:id/qrcode', protect, getBookingQR);
 router.delete('/:id', protect, cancelBooking);
+router.post('/:id/cod', protect, confirmCODBooking);
 router.get('/event/:eventId', protect, authorize('organizer', 'admin'), getEventBookings);
 
 // Payment Routes

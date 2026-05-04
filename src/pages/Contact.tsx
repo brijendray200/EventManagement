@@ -35,9 +35,9 @@ const Contact = () => {
   };
 
   const contactInfo = [
-    { icon: <Mail />, title: 'Email Us', info: 'support@eventsphere.com', desc: 'Reach out for help, questions, or general support.' },
-    { icon: <Phone />, title: 'Call Us', info: '+91 (234) 567-8901', desc: 'Mon - Fri, 9am - 6pm (IST)' },
-    { icon: <MapPin />, title: 'Visit Us', info: 'Lucknow, India', desc: 'Support and operations office' }
+    { icon: <Mail />, title: 'Email Us', info: 'support@eventsphere.in', desc: 'Reach out for help, questions, or general support.' },
+    { icon: <Phone />, title: 'Call Us', info: '+91 8887626782', desc: 'Mon - Fri, 9am - 6pm (IST)' },
+    { icon: <MapPin />, title: 'Visit Us', info: 'Gomti Nagar, Lucknow', desc: 'UP 226010' }
   ];
   const supportMapUrl = 'https://www.google.com/maps?q=Lucknow,+Uttar+Pradesh,+India&z=13&output=embed';
   const supportMapsLink = 'https://www.google.com/maps/search/?api=1&query=Lucknow,+Uttar+Pradesh,+India';

@@ -1,0 +1,112 @@
+.organizer-card {
+  position: relative;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  padding: 0 !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.org-banner {
+  height: 100px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.org-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.6);
+}
+
+.org-profile-pic {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin: -40px auto 10px;
+  border: 4px solid #0f172a;
+  border-radius: 50%;
+  z-index: 2;
+}
+
+.org-profile-pic img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.verified-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: #0f172a;
+  border-radius: 50%;
+}
+
+.org-content {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.org-content h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: white;
+}
+
+.org-specialty {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.org-stats {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin: 1.25rem 0;
+  padding: 0.75rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.stat span {
+  color: white;
+  font-weight: 500;
+}
+
+.org-rating {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 1.5rem;
+}
+
+.rating-val {
+  font-weight: 700;
+  color: white;
+}
+
+.total-reviews {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.org-btn {
+  width: 100%;
+  padding: 0.75rem !important;
+  font-size: 0.9rem !important;
+  border-radius: 0.75rem !important;
+}

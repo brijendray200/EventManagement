@@ -8,6 +8,7 @@ import './AttendeeList.css';
 const AttendeeList = () => {
   const { eventId } = useParams();
   const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [bookings, setBookings] = useState([]);
   const [title, setTitle] = useState('Your Event');
 
@@ -37,10 +38,44 @@ const AttendeeList = () => {
   }, [eventId]);
 
   const filteredBookings = useMemo(() => (
-    bookings.filter((item) =>
-      [item.attendeeName, item.attendeeEmail, item._id].join(' ').toLowerCase().includes(search.toLowerCase())
-    )
-  ), [bookings, search]);
+    bookings.filter((item) => {
+      const matchesSearch = [item.attendeeName, item.attendeeEmail, item._id].join(' ').toLowerCase().includes(search.toLowerCase());
+      const matchesStatus = filterStatus === 'all' || item.status.toLowerCase() === filterStatus.toLowerCase();
+      return matchesSearch && matchesStatus;
+    })
+  ), [bookings, search, filterStatus]);
+
+  const handleExportCSV = () => {
+    if (filteredBookings.length === 0) {
+      alert("No data to export");
+      return;
+    }
+    
+    const headers = ["Ticket ID", "Attendee Name", "Attendee Email", "Booking Date", "Status", "Tickets", "Amount"];
+    
+    const csvContent = [
+      headers.join(","),
+      ...filteredBookings.map(b => [
+        `#${b._id.slice(-6).toUpperCase()}`,
+        `"${(b.attendeeName || '').replace(/"/g, '""')}"`,
+        `"${(b.attendeeEmail || '').replace(/"/g, '""')}"`,
+        new Date(b.createdAt).toLocaleDateString(),
+        b.status,
+        b.numberOfTickets || 1,
+        b.totalPrice || 0
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `attendees_${title.replace(/\s+/g, '_')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="attendee-list-page container">
@@ -57,9 +92,21 @@ const AttendeeList = () => {
           <Search size={20} />
           <input type="text" placeholder="Search by name, email or ticket ID..." value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <div className="control-btns">
-          <button className="btn btn-secondary btn-sm"><Users size={18}/> Filters</button>
-          <button className="btn btn-primary btn-sm"><Download size={18}/> Export CSV</button>
+        <div className="control-btns" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <select 
+            className="btn btn-secondary btn-sm" 
+            style={{ paddingRight: '1rem' }}
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+          >
+            <option value="all" style={{ background: '#0f172a', color: 'white' }}>All Status</option>
+            <option value="confirmed" style={{ background: '#0f172a', color: 'white' }}>Confirmed</option>
+            <option value="pending" style={{ background: '#0f172a', color: 'white' }}>Pending</option>
+            <option value="cancelled" style={{ background: '#0f172a', color: 'white' }}>Cancelled</option>
+          </select>
+          <button className="btn btn-primary btn-sm" onClick={handleExportCSV}>
+            <Download size={18}/> Export CSV
+          </button>
         </div>
       </div>
 

@@ -1,4 +1,41 @@
 const Event = require('../models/Event');
+const Booking = require('../models/Booking');
+const User = require('../models/User');
+
+// @desc    Get platform public stats
+// @route   GET /api/events/stats/platform
+// @access  Public
+exports.getPlatformStats = async (req, res, next) => {
+    try {
+        const totalEvents = await Event.countDocuments();
+        const totalUsers = await User.countDocuments();
+        const bookings = await Booking.find({ status: 'confirmed' }).lean();
+        const totalTickets = bookings.reduce((acc, b) => acc + (b.quantity || 1), 0);
+        
+        const events = await Event.find().select('location category').lean();
+        const uniqueCities = new Set(events.map(e => (e.location || '').split(',')[0].trim()).filter(Boolean)).size;
+        
+        const categories = {};
+        events.forEach(e => {
+            if(e.category) {
+                categories[e.category] = (categories[e.category] || 0) + 1;
+            }
+        });
+
+        res.status(200).json({
+            success: true,
+            data: {
+                totalEvents,
+                totalUsers,
+                totalTickets,
+                uniqueCities,
+                categories
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
 
 // @desc    Get all events
 // @route   GET /api/events

@@ -55,6 +55,8 @@ const EventListing = () => {
 
   const [realEvents, setRealEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const eventsPerPage = 9;
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -99,6 +101,14 @@ const EventListing = () => {
     if (sortBy === 'price') return a.price - b.price;
     return new Date(a.date) - new Date(b.date);
   });
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, category, selectedDate, priceRange, sortBy]);
+
+  const totalPages = Math.ceil(filteredEvents.length / eventsPerPage);
+  const paginatedEvents = filteredEvents.slice((currentPage - 1) * eventsPerPage, currentPage * eventsPerPage);
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -250,10 +260,9 @@ const EventListing = () => {
           </div>
         </div>
 
-        {/* EVENTS GRID */}
         <div className="listing-grid">
           <AnimatePresence mode="popLayout">
-            {filteredEvents.map((event, i) => (
+            {paginatedEvents.map((event, i) => (
               <motion.div 
                 layout
                 key={event._id || event.id}
@@ -267,6 +276,40 @@ const EventListing = () => {
             ))}
           </AnimatePresence>
         </div>
+
+        {/* PAGINATION UI */}
+        {totalPages > 1 && (
+          <div className="pagination-controls" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '3rem', paddingBottom: '3rem' }}>
+            <button 
+              className="btn btn-secondary" 
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              style={{ padding: '0.5rem 1rem', opacity: currentPage === 1 ? 0.5 : 1 }}
+            >
+              Previous
+            </button>
+            <div className="page-numbers" style={{ display: 'flex', gap: '0.5rem' }}>
+              {Array.from({ length: totalPages }).map((_, idx) => (
+                <button
+                  key={idx}
+                  className={`btn ${currentPage === idx + 1 ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setCurrentPage(idx + 1)}
+                  style={{ width: '36px', height: '36px', padding: 0, display: 'grid', placeItems: 'center', borderRadius: '8px' }}
+                >
+                  {idx + 1}
+                </button>
+              ))}
+            </div>
+            <button 
+              className="btn btn-secondary" 
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              style={{ padding: '0.5rem 1rem', opacity: currentPage === totalPages ? 0.5 : 1 }}
+            >
+              Next
+            </button>
+          </div>
+        )}
 
         {/* EMPTY STATE */}
         {filteredEvents.length === 0 && (

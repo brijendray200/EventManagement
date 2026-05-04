@@ -15,7 +15,8 @@ import {
   Zap,
   ArrowRight,
   Trash2,
-  Maximize2
+  Maximize2,
+  Plus
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLocation as useUserLocation } from '../context/LocationContext';
@@ -28,12 +29,19 @@ const AIConcierge = ({ userRole }) => {
     const navigate = useNavigate();
     const { city: userCity } = useUserLocation();
     
-    // Context State
+    const isOrganizer = ['organizer', 'admin'].includes(userRole);
+
+    // Initial message based on role
+    const getInitialMessage = () => {
+        if (isOrganizer) return `Hi! I'm your AI Business Assistant. How can I help you manage your events and revenue today?`;
+        return `Hi! I'm your EventSphere Concierge. How can I help you today?`;
+    };
+
     const [currentEvent, setCurrentEvent] = useState(null);
     const [messages, setMessages] = useState([
         { 
             id: 1, 
-            text: `Hi! I'm your EventSphere Concierge. How can I help you today?`, 
+            text: getInitialMessage(), 
             sender: 'bot', 
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
         }
@@ -48,52 +56,9 @@ const AIConcierge = ({ userRole }) => {
     useEffect(() => {
         const pathParts = pathname.split('/');
         
-        // Event Details Page Detection
-        if (pathname.includes('/events/') && pathParts[2]) {
-            api.get(`/ai/event-summary/${pathParts[2]}`)
-                .then(({ data }) => {
-                    if (data?.success) {
-                        setCurrentEvent({ _id: pathParts[2], title: data.data.headline.split(' is ')[0] || 'this event' });
-                    } else {
-                        setCurrentEvent({ _id: pathParts[2], title: 'this event' });
-                    }
-                })
-                .catch(() => setCurrentEvent({ _id: pathParts[2], title: 'this event' }));
-        } 
-        // Booking Flow Detection
-        else if (pathname.includes('/booking/')) {
+        if (isOrganizer) {
             setCurrentEvent(null);
-            if (isOpen && messages.length < 5) {
-                setMessages(prev => [
-                    ...prev,
-                    {
-                        id: Date.now(),
-                        text: `Almost there! Just fill in your name and email. We'll send the ticket to your email instantly after payment. Need any help with the form?`,
-                        sender: 'bot',
-                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                    }
-                ]);
-            }
-        }
-        // Payment Flow Detection
-        else if (pathname.includes('/payment/')) {
-            setCurrentEvent(null);
-            if (isOpen && messages.length < 5) {
-                setMessages(prev => [
-                    ...prev,
-                    {
-                        id: Date.now(),
-                        text: `You're at the final step! We use Razorpay for secure payments. You can use UPI, Cards, or Netbanking. Having trouble with the payment gateway?`,
-                        sender: 'bot',
-                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                    }
-                ]);
-            }
-        }
-        // Organizer Dashboard Detection
-        else if (pathname.includes('/organizer/dashboard')) {
-            setCurrentEvent(null);
-            if (isOpen && messages.length < 5) {
+            if (pathname.includes('/organizer/dashboard') && isOpen && messages.length < 5) {
                 setMessages(prev => [
                     ...prev,
                     {
@@ -103,12 +68,17 @@ const AIConcierge = ({ userRole }) => {
                         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                     }
                 ]);
-            }
-        }
-        // Admin Dashboard Detection
-        else if (pathname.includes('/admin/')) {
-            setCurrentEvent(null);
-            if (isOpen && messages.length < 5) {
+            } else if (pathname.includes('/organizer/create-event') && isOpen && messages.length < 5) {
+                setMessages(prev => [
+                    ...prev,
+                    {
+                        id: Date.now(),
+                        text: `Let's create a great event! Need help writing an engaging description or picking a category?`,
+                        sender: 'bot',
+                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    }
+                ]);
+            } else if (pathname.includes('/admin/') && isOpen && messages.length < 5) {
                 setMessages(prev => [
                     ...prev,
                     {
@@ -119,22 +89,60 @@ const AIConcierge = ({ userRole }) => {
                     }
                 ]);
             }
+        } else {
+            // Attendee Context
+            if (pathname.includes('/events/') && pathParts[2]) {
+                api.get(`/ai/event-summary/${pathParts[2]}`)
+                    .then(({ data }) => {
+                        if (data?.success) {
+                            setCurrentEvent({ _id: pathParts[2], title: data.data.headline.split(' is ')[0] || 'this event' });
+                        } else {
+                            setCurrentEvent({ _id: pathParts[2], title: 'this event' });
+                        }
+                    })
+                    .catch(() => setCurrentEvent({ _id: pathParts[2], title: 'this event' }));
+            } else if (pathname.includes('/booking/')) {
+                setCurrentEvent(null);
+                if (isOpen && messages.length < 5) {
+                    setMessages(prev => [
+                        ...prev,
+                        {
+                            id: Date.now(),
+                            text: `Almost there! Just fill in your name and email. We'll send the ticket to your email instantly after payment. Need any help with the form?`,
+                            sender: 'bot',
+                            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        }
+                    ]);
+                }
+            } else if (pathname.includes('/payment/')) {
+                setCurrentEvent(null);
+                if (isOpen && messages.length < 5) {
+                    setMessages(prev => [
+                        ...prev,
+                        {
+                            id: Date.now(),
+                            text: `You're at the final step! We use Razorpay for secure payments. You can use UPI, Cards, or Netbanking. Having trouble with the payment gateway?`,
+                            sender: 'bot',
+                            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        }
+                    ]);
+                }
+            } else {
+                setCurrentEvent(null);
+            }
         }
-        else {
-            setCurrentEvent(null);
-        }
-    }, [pathname, isOpen]);
+    }, [pathname, isOpen, isOrganizer]);
 
-    // Update welcome message when city is detected
+    // Update welcome message when city is detected (Only for attendees)
     useEffect(() => {
-        if (userCity && userCity !== 'Detecting...' && messages.length === 1) {
+        if (!isOrganizer && userCity && userCity !== 'Detecting...' && messages.length === 1) {
             setMessages(prev => {
                 const newMsgs = [...prev];
                 newMsgs[0].text = `Hi! I'm your AI Concierge. I see you're in ${userCity}! Would you like to check out the trending events nearby?`;
                 return newMsgs;
             });
         }
-    }, [userCity]);
+    }, [userCity, isOrganizer]);
 
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
@@ -150,7 +158,7 @@ const AIConcierge = ({ userRole }) => {
 
     const getAIResponse = async (query) => {
         try {
-            const { data } = await api.post('/ai/chat', { message: query });
+            const { data } = await api.post('/ai/chat', { message: query, role: userRole });
             if (data.success) {
                 return data.data;
             }
@@ -188,17 +196,27 @@ const AIConcierge = ({ userRole }) => {
         setMessages(prev => [...prev, botMsg]);
     };
 
-    const quickActions = currentEvent ? [
+    // Completely Segregated Quick Actions
+    const organizerQuickActions = [
+        { label: "Show my total revenue", icon: <Zap size={12}/> },
+        { label: "How many live events?", icon: <Calendar size={12}/> },
+        { label: "Which event is top performing?", icon: <Sparkles size={12}/> },
+        { label: "How to create new event?", icon: <Plus size={12}/>, action: () => navigate('/organizer/create-event') }
+    ];
+
+    const attendeeQuickActions = currentEvent ? [
         { label: `Book ${currentEvent.title.split(' ')[0]}`, icon: <Ticket size={12}/>, action: () => navigate(`/booking/${currentEvent._id || currentEvent.id}`) },
         { label: "Event Agenda", icon: <Calendar size={12}/> },
         { label: "Refund Policy", icon: <HelpCircle size={12}/> },
         { label: "Need Help?", icon: <MessageSquare size={12}/> }
     ] : [
-        { label: `Events in ${userCity}`, icon: <MapPin size={12}/>, action: () => navigate('/events') },
+        { label: `Events in ${userCity || 'City'}`, icon: <MapPin size={12}/>, action: () => navigate('/events') },
         { label: "How to book?", icon: <Ticket size={12}/> },
         { label: "Refund Policy", icon: <HelpCircle size={12}/> },
         { label: "Switch to Host", icon: <Zap size={12}/> }
     ];
+
+    const quickActions = isOrganizer ? organizerQuickActions : attendeeQuickActions;
 
     const clearChat = () => {
         setMessages([
@@ -261,8 +279,8 @@ const AIConcierge = ({ userRole }) => {
                                     <div className="status-ring"></div>
                                 </div>
                                 <div className="ai-label">
-                                    <h3>EventSphere <span className="ai-premium-badge">PRO</span></h3>
-                                    <span className="ai-subtitle">Powered by AI Intelligence</span>
+                                    <h3>{isOrganizer ? 'Organizer Assistant' : 'EventSphere PRO'}</h3>
+                                    <span className="ai-subtitle">{isOrganizer ? 'Business Intelligence AI' : 'Powered by AI Intelligence'}</span>
                                 </div>
                             </div>
                             <div className="ai-header-controls">

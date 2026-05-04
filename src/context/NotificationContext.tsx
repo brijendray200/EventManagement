@@ -22,11 +22,20 @@ export const NotificationProvider = ({ children }) => {
         title: notif.title || 'Notification',
         message: notif.message,
         type: notif.type || 'info',
+        targetRole: notif.targetRole || 'all',
         read: notif.isRead ?? notif.read ?? false,
-        time: notif.createdAt || notif.time || new Date().toISOString()
+        time: notif.createdAt || notif.time || new Date().toISOString(),
+        actionUrl: notif.actionUrl || '',
+        relatedEvent: notif.relatedEvent || null
     });
 
-    // Fetch initial notifications from DB
+    // Get current user role from localStorage
+    const getCurrentRole = () => {
+        const role = localStorage.getItem('userRole') || 'user';
+        return role === 'organizer' || role === 'admin' ? 'organizer' : 'attendee';
+    };
+
+    // Fetch initial notifications from DB (role-filtered by backend)
     useEffect(() => {
         if (!localStorage.getItem('token')) return;
         const fetchNotifs = async () => {
@@ -42,14 +51,20 @@ export const NotificationProvider = ({ children }) => {
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('user') || 'null') || JSON.parse(localStorage.getItem('userProfile') || 'null');
         if (user && localStorage.getItem('token')) {
-            const newSocket = io('http://localhost:5000');
+            const socketUrl = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+            const newSocket = io(socketUrl);
             setSocket(newSocket);
 
             newSocket.emit('join', user.id || user._id);
 
             newSocket.on('notification', (data) => {
-                showNotification(data.message, data.type || 'info');
-                addInAppNotification('Update', data.message, data.type || 'info');
+                const currentRole = getCurrentRole();
+                // Only show if notification matches user's current role
+                if (data.targetRole === 'all' || data.targetRole === currentRole) {
+                    showNotification(data.message, data.type || 'info');
+                    const normalized = normalizeNotification(data);
+                    setNotifications(prev => [normalized, ...prev]);
+                }
             });
 
             return () => newSocket.close();
@@ -66,22 +81,23 @@ export const NotificationProvider = ({ children }) => {
         }
     }, []);
 
-    const addInAppNotification = useCallback((title, message, type = 'info') => {
+    const addInAppNotification = useCallback((title, message, type = 'info', targetRole = 'all') => {
         const newNotif = {
             id: Date.now(),
             title,
             message,
             type,
+            targetRole,
             read: false,
             time: new Date().toISOString()
         };
         setNotifications(prev => [newNotif, ...prev]);
     }, []);
 
-    const pushNotification = useCallback(async (title, message, type = 'info') => {
-        showNotification(message, ['profile', 'event', 'system'].includes(type) ? 'info' : type);
+    const pushNotification = useCallback(async (title, message, type = 'info', targetRole = 'all') => {
+        showNotification(message, ['profile', 'event', 'system', 'booking', 'payment', 'attendee', 'revenue'].includes(type) ? 'info' : type);
         try {
-            const { data } = await api.post('/notifications', { title, message, type });
+            const { data } = await api.post('/notifications', { title, message, type, targetRole });
             if (data.success && data.data) {
                 setNotifications(prev => [normalizeNotification(data.data), ...prev]);
                 return;
@@ -90,8 +106,14 @@ export const NotificationProvider = ({ children }) => {
             // Fallback below keeps the UX working even if persistence fails.
         }
 
-        addInAppNotification(title, message, type);
+        addInAppNotification(title, message, type, targetRole);
     }, [addInAppNotification, showNotification]);
+
+    // Filter notifications by role for display
+    const getFilteredNotifications = useCallback((role) => {
+        const targetRole = role === 'organizer' || role === 'admin' ? 'organizer' : 'attendee';
+        return notifications.filter(n => n.targetRole === targetRole || n.targetRole === 'all');
+    }, [notifications]);
 
     const markAsRead = async (id) => {
         try {
@@ -125,6 +147,12 @@ export const NotificationProvider = ({ children }) => {
 
     const unreadCount = notifications.filter(n => !n.read).length;
 
+    // Role-specific unread counts
+    const getUnreadCount = useCallback((role) => {
+        const targetRole = role === 'organizer' || role === 'admin' ? 'organizer' : 'attendee';
+        return notifications.filter(n => !n.read && (n.targetRole === targetRole || n.targetRole === 'all')).length;
+    }, [notifications]);
+
     const icons = {
         success: <CheckCircle className="notif-icon success" size={20} />,
         error: <AlertCircle className="notif-icon error" size={20} />,
@@ -137,11 +165,13 @@ export const NotificationProvider = ({ children }) => {
             showNotification, 
             pushNotification,
             notifications, 
+            getFilteredNotifications,
             markAsRead, 
             markAllAsRead, 
             deleteNotification, 
             clearAll,
-            unreadCount 
+            unreadCount,
+            getUnreadCount
         }}>
             {children}
             <div className="notification-container">
@@ -176,4 +206,3 @@ export const NotificationProvider = ({ children }) => {
         </NotificationContext.Provider>
     );
 };
-

@@ -112,38 +112,79 @@ const findMatches = (events: any[], message: string) => {
   return ranked.slice(0, 3);
 };
 
-const buildFallbackChat = (events: any[], message: string) => {
+const buildFallbackChat = (events: any[], message: string, organizerContext?: any) => {
   const intent = getIntent(message);
-  const ranked = findMatches(events, message);
+  const q = message.toLowerCase();
+
+  // 1. ORGANIZER MODE (Strict)
+  if (organizerContext) {
+    const { name, totalRevenue, totalEvents, topEvent, paidBookings } = organizerContext;
+    
+    // Only proceed to attendee logic if they explicitly ask for recommendations
+    const wantsRecommendations = q.includes("recommend") || q.includes("suggest") || q.includes("other events");
+    
+    if (!wantsRecommendations) {
+      if (q.includes("revenue") || q.includes("earn") || q.includes("money") || q.includes("sales") || q.includes("income")) {
+        return `Your current total revenue is INR ${totalRevenue}. You've secured ${paidBookings} paid bookings so far.`;
+      }
+      
+      if (q.includes("event") && (q.includes("how many") || q.includes("count") || q.includes("list") || q.includes("my"))) {
+        return `You have ${totalEvents} events listed. Your top performing event is "${topEvent}".`;
+      }
+      
+      if (q.includes("performance") || q.includes("best") || q.includes("top") || q.includes("popular") || q.includes("analytics")) {
+        return `Analytics show that "${topEvent}" is your most successful event, contributing to your total revenue of INR ${totalRevenue}.`;
+      }
+
+      if (q.includes("create") || q.includes("new") || q.includes("add") || q.includes("host")) {
+        return "You can create a new event from your Organizer Dashboard. Need help with the title or category?";
+      }
+
+      if (intent === "greeting" || q.length < 4) {
+        return `Hello ${name}! I'm your Business Assistant. You have ${totalEvents} events and INR ${totalRevenue} in revenue. How can I help with your business today?`;
+      }
+
+      // If no business keyword matches but user is organizer, don't give attendee matches unless asked
+      return "I'm here to help with your organizer dashboard and business stats. You can ask about your revenue, event count, or how to create new events.";
+    }
+  }
+
+  // 2. ATTENDEE MODE (Fallback)
+  const city = detectCity(events, message);
+  const category = detectCategory(events, message);
 
   if (intent === "greeting") {
-    const featured = events.slice(0, 3).map(formatEventLine).join(". ");
-    return `Hi! I can help with event recommendations, booking steps, refunds, payments, and organizer questions. Popular options right now: ${featured}.`;
+    return "Hello! I'm your EventSphere Concierge. I can help you find events by city, category, or budget. What are you looking for today?";
   }
 
   if (intent === "booking") {
-    return "To book an event: open the event page, click Book Now, enter attendee details, complete payment, and your ticket will appear in My Bookings. If you want, I can also suggest events by city or budget.";
+    return "To book, just click 'Book Now' on any event page. It's fast and secure!";
   }
 
   if (intent === "refund") {
-    return "Refunds depend on the event and payment status. Open your booking, check the event details or contact support from the Contact page. If you share the event or booking issue, I can guide you further.";
+    return "For refund inquiries, please visit our 'Contact' page or check the specific event's cancellation policy. If you have a booking ID, I can help you find the support contact.";
   }
 
-  if (intent === "payment") {
-    return "Payments are completed through the payment step after booking. If payment fails, try again from the booking flow and check that your booking status becomes confirmed in My Bookings.";
+  if (q.includes("contact") || q.includes("support") || q.includes("help")) {
+    return "You can reach our support team via the 'Contact' page. We're available 24/7 to help with bookings, payments, or organizer queries.";
   }
 
-  if (intent === "organizer") {
-    return "Organizers can create events, manage attendees, and view dashboard analytics after signing up as Organizer. If you already have an organizer account, go to Organizer Dashboard to create your first event.";
+  // Only find matches if no other intent was handled
+  const ranked = findMatches(events, message);
+
+  if (ranked.length > 0) {
+    const eventList = ranked.map(formatEventLine).join(". ");
+    let response = `I found some great matches for you: ${eventList}. `;
+    if (city) response += `These are all located in ${city.charAt(0).toUpperCase() + city.slice(1)}. `;
+    if (category) response += `They belong to the ${category} category. `;
+    return response + "Would you like more details on any of these?";
   }
 
-  if (ranked.length === 0) {
-    return "I could not find an exact match. Try asking by city, category, or budget, for example: Mumbai concerts, cheap workshops, or premium events.";
+  if (city || category) {
+    return `I see you're interested in ${category || 'events'} in ${city || 'your area'}. Unfortunately, we don't have exact matches right now, but you can explore all trending events on our home page!`;
   }
 
-  return `Based on your query, these are the best matches: ${ranked
-    .map(formatEventLine)
-    .join(". ")}. If you want, I can narrow this down by city, category, or budget.`;
+  return "I'm not sure I understood that perfectly. Try asking about events in a specific city, a category like 'Workshops', or your business stats if you're an organizer.";
 };
 
 router.get("/recommendations", async (req, res) => {
@@ -166,7 +207,7 @@ router.get("/recommendations", async (req, res) => {
   }
 });
 
-router.post("/chat", aiLimiter, validate(aiChatSchema), async (req, res) => {
+router.post("/chat", protect, aiLimiter, validate(aiChatSchema), async (req: any, res) => {
   try {
     const { message } = req.body;
     if (!message) {
@@ -176,10 +217,38 @@ router.post("/chat", aiLimiter, validate(aiChatSchema), async (req, res) => {
     const events = await Event.find({ status: "approved" }).sort({ isSponsored: -1, createdAt: -1 }).limit(20);
     const catalog = buildCatalog(events);
 
+    // 1. Fetch Organizer context if applicable
+    let organizerContextData: any = null;
+    let organizerContextText = "";
+    if (req.user && req.user.role === "organizer") {
+      const orgEvents = await Event.find({ organizer: req.user._id });
+      const orgBookings = await Booking.find({ event: { $in: orgEvents.map(e => e._id) }, paymentStatus: "paid" });
+      const totalRevenue = orgBookings.reduce((sum, b) => sum + b.totalPrice, 0);
+      const topEvent = orgEvents.length > 0 ? orgEvents[0].title : "N/A";
+      
+      organizerContextData = {
+        name: req.user.name,
+        totalEvents: orgEvents.length,
+        totalRevenue,
+        topEvent,
+        paidBookings: orgBookings.length
+      };
+
+      organizerContextText = `
+Organizer Details:
+- Name: ${req.user.name}
+- Brand: ${req.user.organizerProfile?.brandName || "N/A"}
+- Total Events Hosted: ${orgEvents.length}
+- Total Revenue Earned: INR ${totalRevenue}
+- Recent/Top Event: ${topEvent}
+- Total Paid Bookings: ${orgBookings.length}
+`;
+    }
+
     if (!hasUsableGeminiKey()) {
       return res.json({
         success: true,
-        data: buildFallbackChat(catalog, String(message)),
+        data: buildFallbackChat(catalog, String(message), organizerContextData),
       });
     }
 
@@ -187,16 +256,23 @@ router.post("/chat", aiLimiter, validate(aiChatSchema), async (req, res) => {
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const prompt = `
 You are EventSphere's production website AI concierge.
-Only recommend events from this catalog:
-${JSON.stringify(catalog)}
+${
+  organizerContextText 
+    ? "The user is an ORGANIZER. Your PRIMARY goal is to act as their business consultant. Use the Organizer Details below to answer questions about their revenue, event performance, and business growth. IGNORE the attendee catalog unless they ask to see other events." 
+    : "The user is an ATTENDEE. Help them find events from the catalog below."
+}
+
+${!organizerContextText ? `Only recommend events from this catalog:\n${JSON.stringify(catalog)}` : "Attendee event catalog is available but prioritize the Organizer's own data for their questions."}
+
+${organizerContextText}
 
 User message: ${message}
 
 Rules:
-- Be concise and helpful.
-- Prefer explicit recommendations from the catalog.
-- Mention city, date, and price when recommending.
-- If no close match exists, say that clearly and suggest nearby alternatives from the catalog.
+- Be concise, professional, and helpful.
+- For organizers: Always use their real data (Revenue, Events, etc.) provided in the Organizer Details.
+- For attendees: Recommend specific events with city, date, and price.
+- If no data is available for a question, say you are still gathering insights for their account.
 `;
     const result = await model.generateContent(prompt);
     const text = result.response.text();
@@ -204,9 +280,24 @@ Rules:
   } catch (_error) {
     const events = await Event.find({ status: "approved" }).sort({ isSponsored: -1, createdAt: -1 }).limit(20);
     const catalog = buildCatalog(events);
+
+    // Re-fetch context in catch if needed, but easier to use a variable
+    let fallbackContext: any = null;
+    if (req.user && req.user.role === "organizer") {
+        const orgEvents = await Event.find({ organizer: req.user._id });
+        const orgBookings = await Booking.find({ event: { $in: orgEvents.map(e => e._id) }, paymentStatus: "paid" });
+        fallbackContext = {
+            name: req.user.name,
+            totalEvents: orgEvents.length,
+            totalRevenue: orgBookings.reduce((sum, b) => sum + b.totalPrice, 0),
+            topEvent: orgEvents.length > 0 ? orgEvents[0].title : "N/A",
+            paidBookings: orgBookings.length
+        };
+    }
+
     res.json({
       success: true,
-      data: buildFallbackChat(catalog, String(req.body?.message || "")),
+      data: buildFallbackChat(catalog, String(req.body?.message || ""), fallbackContext),
     });
   }
 });

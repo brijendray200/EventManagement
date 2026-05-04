@@ -22,6 +22,7 @@ const ai = require('./routes/aiRoutes');
 const admin = require('./routes/adminRoutes');
 const notification = require('./routes/notificationRoutes');
 const ads = require('./routes/adRoutes');
+const feedback = require('./routes/feedbackRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -69,6 +70,7 @@ app.use('/api/ai', ai);
 app.use('/api/admin', admin);
 app.use('/api/notifications', notification);
 app.use('/api/ads', ads);
+app.use('/api/feedback', feedback);
 
 // Root Route
 app.get('/', (req, res) => {

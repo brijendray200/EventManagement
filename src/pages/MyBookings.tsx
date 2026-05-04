@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   Calendar, 
   MapPin, 
@@ -187,10 +187,7 @@ const MyBookings = () => {
 
     const infoRows = [
       ['Attendee', booking.attendeeName || 'Guest'],
-      ['Email', booking.attendeeEmail || 'Not provided'],
       ['Venue', booking.event?.location || 'Venue to be announced'],
-      ['Booking ID', String(booking._id || '-')],
-      ['Payment', `Rs. ${Number(booking.totalPrice || 0).toLocaleString('en-IN')}`],
       ['Status', String(booking.status || '').toUpperCase()],
     ];
 

@@ -332,8 +332,12 @@ const Signup = ({ onSignup }) => {
             </>
           )}
 
-          <div className="terms">
-            <ShieldCheck size={16} /> <span>I agree to the <NavLink to="/terms">Terms of Service</NavLink> and <NavLink to="/privacy">Privacy Policy</NavLink></span>
+          <div className="terms remember-me" style={{ alignItems: 'center' }}>
+            <input type="checkbox" id="terms" required style={{ width: '1.1rem', height: '1.1rem', cursor: 'pointer' }} />
+            <label htmlFor="terms" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <ShieldCheck size={16} /> 
+              <span>I agree to the <NavLink to="/terms" onClick={(e) => e.stopPropagation()}>Terms of Service</NavLink> and <NavLink to="/privacy" onClick={(e) => e.stopPropagation()}>Privacy Policy</NavLink></span>
+            </label>
           </div>
           <button type="submit" className="btn btn-primary auth-btn" disabled={isSubmitting}>
             {isSubmitting ? 'Creating Account...' : role === 'organizer' ? 'Create Organizer Account' : 'Create Attendee Account'} <ArrowRight size={18} />

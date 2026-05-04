@@ -6,7 +6,8 @@ import {
   DollarSign,
   BarChart3,
   ArrowRight,
-  CheckCircle
+  CheckCircle,
+  MessageSquare
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import './Dashboard.css';
@@ -44,7 +45,10 @@ const Dashboard = () => {
           <h1 className="gradient-text">Admin Dashboard</h1>
           <p>Monitor users, events, bookings, and approvals.</p>
         </div>
-        <div className="dh-actions">
+        <div className="dh-actions" style={{ display: 'flex', gap: '1rem' }}>
+           <NavLink to="/admin/feedback" className="btn btn-secondary dash-btn">
+             <MessageSquare size={18} /> View User Feedback
+           </NavLink>
            <button className="btn btn-secondary dash-btn">Platform Settings</button>
         </div>
       </div>

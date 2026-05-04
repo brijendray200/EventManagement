@@ -6,6 +6,7 @@ import { useCurrency } from '../context/CurrencyContext';
 import api from '../utils/api';
 import RazorpayModal from '../components/RazorpayModal';
 import PageLoader from '../components/PageLoader';
+import { MOCK_EVENTS } from '../utils/mockData';
 import './Payment.css';
 
 const Payment = () => {
@@ -18,6 +19,20 @@ const Payment = () => {
 
   useEffect(() => {
     const fetchBooking = async () => {
+      if (bookingId === 'mock-payment-id') {
+        // Find any mock event to show something
+        const mockEvent = MOCK_EVENTS[0];
+        setBooking({
+          _id: 'mock-payment-id',
+          event: mockEvent,
+          quantity: 1,
+          totalPrice: mockEvent.price,
+          status: 'pending'
+        });
+        setLoading(false);
+        return;
+      }
+
       try {
         const { data } = await api.get(`/bookings/my-bookings`);
         const currentBooking = data.data.find(b => b._id === bookingId);
@@ -38,6 +53,20 @@ const Payment = () => {
     setIsSuccess(true);
   };
 
+  const handleCODPayment = async () => {
+    try {
+      setLoading(true);
+      const { data } = await api.post(`/bookings/${bookingId}/cod`);
+      if (data.success) {
+        setIsSuccess(true);
+      }
+    } catch (error) {
+      alert(error.response?.data?.message || 'COD confirmation failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) return <PageLoader title="Loading payment details..." />;
   if (!booking) return <div className="container" style={{paddingTop:'150px', textAlign:'center'}}>Booking not found</div>;
 
@@ -47,10 +76,14 @@ const Payment = () => {
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="success-card glass-panel text-center">
           <CheckCircle size={80} color="#10b981" className="success-icon" />
           <h1 className="gradient-text">Booking Confirmed!</h1>
-          <p className="success-msg">Your ticket has been booked successfully. You can find your ticket in the My Bookings section.</p>
+          <p className="success-msg">
+            {booking?.paymentMethod === 'cod' 
+              ? "Your booking is confirmed! You've chosen Cash on Delivery. Please keep the exact amount ready to pay at the venue gate."
+              : "Your ticket has been booked successfully. Your payment was processed securely via Razorpay."}
+          </p>
           <div className="booking-info">
             <div className="bi-row"><span>Booking ID:</span> <strong>{bookingId}</strong></div>
-            <div className="bi-row"><span>Status:</span> <strong style={{color:'#10b981'}}>Paid</strong></div>
+            <div className="bi-row"><span>Status:</span> <strong style={{color:'#10b981'}}>{booking?.paymentMethod === 'cod' ? 'Confirmed (COD)' : 'Paid'}</strong></div>
           </div>
           <div className="success-actions">
             <NavLink to="/my-bookings" className="btn btn-primary">View Tickets <ArrowRight size={18}/></NavLink>
@@ -111,6 +144,20 @@ const Payment = () => {
               >
                 Pay with Razorpay <ArrowRight size={20} />
               </button>
+
+              <div className="cod-separator">
+                <div className="sep-line"></div>
+                <span>OR</span>
+                <div className="sep-line"></div>
+              </div>
+
+              <button 
+                className="btn btn-secondary cod-btn" 
+                onClick={handleCODPayment}
+              >
+                Cash on Delivery (COD) <ArrowRight size={20} />
+              </button>
+
               <div className="trust-badges">
                 <div className="t-badge"><Lock size={14}/> SSL Encrypted</div>
                 <div className="t-badge"><CheckCircle size={14}/> Verified Payment</div>

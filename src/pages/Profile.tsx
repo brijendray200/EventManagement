@@ -388,6 +388,66 @@ const Profile = ({ updateProfile }) => {
                         <label><MapPin size={14}/> Bio</label>
                         <input type="text" value={user.bio || ''} onChange={(e) => setUser({ ...user, bio: e.target.value })} disabled={!isEditing} placeholder="Tell us a little about yourself" />
                       </div>
+                      
+                      {userRole === 'organizer' && (
+                        <>
+                          <div className="p-nav-divider" style={{ gridColumn: '1 / -1', margin: '1rem 0' }}></div>
+                          <h3 style={{ gridColumn: '1 / -1', fontSize: '1.1rem', color: 'white', marginBottom: '1rem' }}>Business Profile</h3>
+                          
+                          <div className="p-form-group">
+                            <label><Shield size={14}/> Brand Name</label>
+                            <input 
+                              type="text" 
+                              value={user.organizerProfile?.brandName || ''} 
+                              onChange={(e) => setUser({ 
+                                ...user, 
+                                organizerProfile: { ...user.organizerProfile, brandName: e.target.value } 
+                              })} 
+                              disabled={!isEditing} 
+                              placeholder="e.g. Elite Productions" 
+                            />
+                          </div>
+                          <div className="p-form-group">
+                            <label><Globe size={14}/> Website</label>
+                            <input 
+                              type="text" 
+                              value={user.organizerProfile?.website || ''} 
+                              onChange={(e) => setUser({ 
+                                ...user, 
+                                organizerProfile: { ...user.organizerProfile, website: e.target.value } 
+                              })} 
+                              disabled={!isEditing} 
+                              placeholder="https://yoursite.com" 
+                            />
+                          </div>
+                          <div className="p-form-group">
+                            <label><LayoutGrid size={14}/> Organization Type</label>
+                            <input 
+                              type="text" 
+                              value={user.organizerProfile?.organizationType || ''} 
+                              onChange={(e) => setUser({ 
+                                ...user, 
+                                organizerProfile: { ...user.organizerProfile, organizationType: e.target.value } 
+                              })} 
+                              disabled={!isEditing} 
+                              placeholder="e.g. Event Agency" 
+                            />
+                          </div>
+                          <div className="p-form-group">
+                            <label><CheckCircle size={14}/> Event Focus</label>
+                            <input 
+                              type="text" 
+                              value={user.organizerProfile?.eventFocus || ''} 
+                              onChange={(e) => setUser({ 
+                                ...user, 
+                                organizerProfile: { ...user.organizerProfile, eventFocus: e.target.value } 
+                              })} 
+                              disabled={!isEditing} 
+                              placeholder="e.g. Concerts, Corporate" 
+                            />
+                          </div>
+                        </>
+                      )}
                    </div>
                 </div>
               )}

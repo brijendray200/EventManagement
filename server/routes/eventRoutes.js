@@ -6,7 +6,8 @@ const {
     createEvent,
     updateEvent,
     deleteEvent,
-    eventPhotoUpload
+    eventPhotoUpload,
+    getPlatformStats
 } = require('../controllers/eventController');
 
 const router = express.Router();
@@ -14,6 +15,7 @@ const router = express.Router();
 const { protect, authorize } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
+router.get('/stats/platform', getPlatformStats);
 router.get('/radius/:lat/:lng/:distance', getEventsInRadius);
 
 router.put('/:id/photo', protect, authorize('organizer', 'admin'), upload.single('image'), eventPhotoUpload);

@@ -152,43 +152,63 @@ router.post("/forgotpassword", validate(forgotPasswordSchema), async (req, res) 
     const resetToken = user.getResetPasswordToken();
     await user.save({ validateBeforeSave: false });
 
-    const requestOrigin = req.headers.origin;
-    const clientBaseUrl =
-      process.env.NODE_ENV === "production"
-        ? process.env.CLIENT_URL || requestOrigin || "http://localhost:5173"
-        : requestOrigin || process.env.CLIENT_URL || "http://localhost:5173";
-    const resetUrl = `${clientBaseUrl.replace(/\/$/, "")}/reset-password/${resetToken}`;
+    const message = `Your password reset OTP is: ${resetToken}\n\nIt is valid for 10 minutes.`;
     const emailResult = await sendEmail({
       email: user.email,
       subject: "Reset your EventSphere password",
-      message: `Reset your password here: ${resetUrl}`,
+      message: message,
     });
 
-    console.log("RESET LINK:", resetUrl);
+    console.log("RESET OTP:", resetToken);
     res.json({
       success: true,
-      message: emailResult?.delivered ? "Reset link sent successfully" : "Email not configured yet. Use the reset link below for testing.",
-      resetUrl: emailResult?.delivered ? undefined : resetUrl,
+      message: emailResult?.delivered ? "Reset OTP sent successfully" : "Email not configured yet. Check terminal for OTP.",
+      email: user.email,
       emailDelivered: !!emailResult?.delivered,
+      devOtp: process.env.NODE_ENV !== "production" || !emailResult?.delivered ? resetToken : undefined,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.put("/resetpassword/:resettoken", validate(resetPasswordSchema), async (req, res) => {
+router.post("/verifyotp", async (req, res) => {
   try {
-    const hashedToken = crypto.createHash("sha256").update(String(req.params.resettoken)).digest("hex");
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, message: "Please provide email and OTP" });
+    }
+    const hashedToken = crypto.createHash("sha256").update(String(otp)).digest("hex");
     const user = await User.findOne({
+      email,
       resetPasswordToken: hashedToken,
       resetPasswordExpire: { $gt: new Date() },
     });
 
     if (!user) {
-      return res.status(400).json({ success: false, message: "Invalid or expired token" });
+      return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
+    }
+    res.json({ success: true, message: "OTP verified" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.put("/resetpassword", validate(resetPasswordSchema), async (req, res) => {
+  try {
+    const { email, otp, password } = req.body;
+    const hashedToken = crypto.createHash("sha256").update(String(otp)).digest("hex");
+    const user = await User.findOne({
+      email,
+      resetPasswordToken: hashedToken,
+      resetPasswordExpire: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
     }
 
-    user.password = req.body.password;
+    user.password = password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
     await user.save();
@@ -248,6 +268,20 @@ router.get("/logout", async (req, res) => {
 
   clearAuthCookies(res);
   res.json({ success: true });
+});
+
+// @desc    Get all organizers
+// @route   GET /api/auth/organizers
+// @access  Public
+router.get("/organizers", async (req, res) => {
+  try {
+    const organizers = await User.find({ role: "organizer" }).select(
+      "name avatar bio organizerProfile rating reviewsCount followerCount eventCount"
+    );
+    res.json({ success: true, data: organizers });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 export default router;
